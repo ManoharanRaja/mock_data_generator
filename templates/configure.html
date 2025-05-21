@@ -1,0 +1,29 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Configure Field Data Types</h2>
+<form method="post" action="{{ url_for('generate') }}">
+  <input type="hidden" name="filename" value="{{ filename }}" />
+  <table>
+    <tr>
+      <th>Field Name</th>
+      <th>Data Type</th>
+    </tr>
+    {% for field in fields %}
+    <tr>
+      <td>{{ field }}</td>
+      <td>
+        <select name="{{ field }}">
+          <option value="Random Number">Random Number</option>
+          <option value="Random Name">Random Name</option>
+          <option value="Boolean">Boolean</option>
+        </select>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <label
+    >Number of Records:
+    <input type="number" name="num_records" min="1" value="10" required
+  /></label>
+  <button type="submit">Generate Data</button>
+</form>
+{% endblock %}
