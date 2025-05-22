@@ -91,8 +91,12 @@ def generate():
         import xml.dom.minidom
         rough_string = ET.tostring(elem, encoding="utf-8")
         reparsed = xml.dom.minidom.parseString(rough_string.decode("utf-8"))
-        return reparsed.toprettyxml(indent="  ", encoding="utf-8")
-
+        # Return only the pretty XML string, without the XML declaration
+        pretty_xml = reparsed.toprettyxml(indent="  ")
+        # Remove the XML declaration if present
+        pretty_xml = '\n'.join(line for line in pretty_xml.split('\n') if not line.strip().startswith('<?xml'))
+        return pretty_xml.encode("utf-8")
+    
     if separate_files:
         # Export each record as a separate file (example: JSON, CSV, XML, Excel)
         from zipfile import ZipFile
@@ -113,12 +117,25 @@ def generate():
                     zipf.writestr(record_path, output.getvalue())
                 elif export_type == "xml":
                     record_path = f"record_{record_num}.xml"
-                    root = ET.Element("Record")
+                    # Default root tag and attributes
+                    root_tag = "root"
+                    root_attrib = {}
+                    ext = filename.rsplit('.', 1)[1].lower()
+                    if ext == "xml":
+                        uploaded_tree = ET.parse(os.path.join(UPLOAD_FOLDER, filename))
+                        uploaded_root = uploaded_tree.getroot()
+                        root_tag = uploaded_root.tag
+                        root_attrib = uploaded_root.attrib
+                    # Create root node as in uploaded file
+                    root = ET.Element(root_tag, root_attrib)
+                    rec_elem = ET.SubElement(root, "Record")
                     for k, v in record.items():
-                        elem = ET.SubElement(root, k)
+                        elem = ET.SubElement(rec_elem, k)
                         elem.text = str(v)
                     xml_str = prettify_xml(root)
-                    zipf.writestr(record_path, xml_str)
+                    # Write XML declaration manually
+                    xml_bytes = b'<?xml version="1.0" encoding="UTF-8"?>\n' + xml_str
+                    zipf.writestr(record_path, xml_bytes)
                 elif export_type in ["xlsx", "xls", "excel"]:
                     record_path = f"record_{record_num}.xlsx"
                     df = pd.DataFrame([record])
@@ -141,14 +158,26 @@ def generate():
                 writer.writerows(data)
         elif export_type == "xml":
             outpath = os.path.join(UPLOAD_FOLDER, "mock_data.xml")
-            root = ET.Element("Records")
+            # Default root tag and attributes
+            root_tag = "Records"
+            root_attrib = {}
+            # If the uploaded file is XML, try to preserve root tag and attributes
+            ext = filename.rsplit('.', 1)[1].lower()
+            if ext == "xml":
+                tree = ET.parse(os.path.join(UPLOAD_FOLDER, filename))
+                uploaded_root = tree.getroot()
+                root_tag = uploaded_root.tag
+                root_attrib = uploaded_root.attrib
+            root = ET.Element(root_tag, root_attrib)
             for record in data:
                 rec_elem = ET.SubElement(root, "Record")
                 for k, v in record.items():
                     elem = ET.SubElement(rec_elem, k)
                     elem.text = str(v)
             xml_str = prettify_xml(root)
+            # Write XML declaration manually
             with open(outpath, "wb") as f:
+                f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
                 f.write(xml_str)
         elif export_type in ["xlsx", "xls", "excel"]:
             outpath = os.path.join(UPLOAD_FOLDER, "mock_data.xlsx")
