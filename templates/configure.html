@@ -20,10 +20,29 @@
     </tr>
     {% endfor %}
   </table>
-  <label
-    >Number of Records:
-    <input type="number" name="num_records" min="1" value="10" required
-  /></label>
-  <button type="submit">Generate Data</button>
+
+  <div style="margin-top: 30px">
+    <label style="margin-right: 15px">
+      Number of Records:
+      <input type="number" name="num_records" min="1" value="1" required />
+    </label>
+
+    <label style="margin-right: 15px">
+      Export Type:
+      <select name="export_type">
+        <option value="csv">CSV</option>
+        <option value="json">JSON</option>
+        <option value="xml">XML</option>
+        <option value="xlsx">XLSX</option>
+      </select>
+    </label>
+
+    <label style="margin-right: 15px">
+      <input type="checkbox" name="separate_files" value="true" />
+      Export each record into a separate file?
+    </label>
+
+    <button type="submit">Generate Data</button>
+  </div>
 </form>
 {% endblock %}
