@@ -127,8 +127,17 @@ def generate():
                         root_tag = uploaded_root.tag
                         root_attrib = uploaded_root.attrib
                     # Create root node as in uploaded file
+                    child_tag = "Record"
+                    if ext == "xml":
+                        uploaded_tree = ET.parse(os.path.join(UPLOAD_FOLDER, filename))
+                        uploaded_root = uploaded_tree.getroot()
+                        root_tag = uploaded_root.tag
+                        root_attrib = uploaded_root.attrib
+                        first_child = next(iter(uploaded_root), None)
+                        if first_child is not None:
+                            child_tag = first_child.tag
                     root = ET.Element(root_tag, root_attrib)
-                    rec_elem = ET.SubElement(root, "Record")
+                    rec_elem = ET.SubElement(root, child_tag)
                     for k, v in record.items():
                         elem = ET.SubElement(rec_elem, k)
                         elem.text = str(v)
@@ -168,9 +177,18 @@ def generate():
                 uploaded_root = tree.getroot()
                 root_tag = uploaded_root.tag
                 root_attrib = uploaded_root.attrib
+            child_tag = "Record"
+            if ext == "xml":
+                tree = ET.parse(os.path.join(UPLOAD_FOLDER, filename))
+                uploaded_root = tree.getroot()
+                root_tag = uploaded_root.tag
+                root_attrib = uploaded_root.attrib
+                first_child = next(iter(uploaded_root), None)
+                if first_child is not None:
+                    child_tag = first_child.tag
             root = ET.Element(root_tag, root_attrib)
             for record in data:
-                rec_elem = ET.SubElement(root, "Record")
+                rec_elem = ET.SubElement(root, child_tag)
                 for k, v in record.items():
                     elem = ET.SubElement(rec_elem, k)
                     elem.text = str(v)
