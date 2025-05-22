@@ -1,31 +1,16 @@
 import os
 import csv
 import json
-import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 import io
-
-def prettify_xml(elem):
-    import xml.dom.minidom
-    rough_string = ET.tostring(elem, encoding="utf-8")
-    reparsed = xml.dom.minidom.parseString(rough_string.decode("utf-8"))
-    pretty_xml = reparsed.toprettyxml(indent="  ")
-    pretty_xml = '\n'.join(line for line in pretty_xml.split('\n') if not line.strip().startswith('<?xml'))
-    return pretty_xml.encode("utf-8")
+from handlers.xml_handler import prettify_xml, extract_xml_structure, build_xml_tree
 
 def export_zip(data, field_types, filename, upload_folder, export_type):
     ext = filename.rsplit('.', 1)[1].lower()
-    root_tag = "Records"
-    root_attrib = {}
-    child_tag = "Record"
     if ext == "xml":
-        tree = ET.parse(os.path.join(upload_folder, filename))
-        uploaded_root = tree.getroot()
-        root_tag = uploaded_root.tag
-        root_attrib = uploaded_root.attrib
-        first_child = next(iter(uploaded_root), None)
-        if first_child is not None:
-            child_tag = first_child.tag
+        root_tag, root_attrib, child_tag = extract_xml_structure(os.path.join(upload_folder, filename))
+    else:
+        root_tag, root_attrib, child_tag = "Records", {}, "Record"
 
     zip_path = os.path.join(upload_folder, "mock_data_records.zip")
     with ZipFile(zip_path, 'w') as zipf:
@@ -43,11 +28,7 @@ def export_zip(data, field_types, filename, upload_folder, export_type):
                 zipf.writestr(record_path, output.getvalue())
             elif export_type == "xml":
                 record_path = f"record_{record_num}.xml"
-                root = ET.Element(root_tag, root_attrib)
-                rec_elem = ET.SubElement(root, child_tag)
-                for k, v in record.items():
-                    elem = ET.SubElement(rec_elem, k)
-                    elem.text = str(v)
+                root = build_xml_tree(root_tag, root_attrib, child_tag, record)
                 xml_str = prettify_xml(root)
                 xml_bytes = b'<?xml version="1.0" encoding="UTF-8"?>\n' + xml_str
                 zipf.writestr(record_path, xml_bytes)
