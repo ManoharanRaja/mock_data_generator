@@ -63,7 +63,15 @@ DATA_TYPE_GENERATORS = {
     "Random Choice": lambda: random.choice(["Apple", "Banana", "Cherry", "Date"]),
 }
 
-def generate_field_value(dtype):
+def generate_field_value(dtype, options=None):
+    if dtype == "Random Choice":
+        # Use provided options
+        if options:
+            choices = [opt.strip() for opt in options.split(",") if opt.strip()]
+            return random.choice(choices) if choices else ""
+        else:
+            return "" # No fallback needed, as options are mandatory
+    # ...rest of your mapping logic...
     generator = DATA_TYPE_GENERATORS.get(dtype)
     if generator:
         return generator()

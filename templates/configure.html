@@ -1,15 +1,8 @@
 {% extends 'base.html' %} {% block content %}
 <h2>Configure Field Data Types</h2>
-<style>
-  table th,
-  table td {
-    padding: 10px 25px;
-    text-align: left;
-  }
-</style>
 <form method="post" action="{{ url_for('generate') }}">
   <input type="hidden" name="filename" value="{{ filename }}" />
-  <table>
+  <table class="table-spacing">
     <tr>
       <th>Field Name</th>
       <th>Data Type</th>
@@ -19,7 +12,11 @@
     <tr>
       <td>{{ field }}</td>
       <td>
-        <select name="{{ field }}">
+        <select
+          name="{{ field }}"
+          class="data-type-select"
+          data-field="{{ field }}"
+        >
           {% for method in allowed_data_types %}
           <option value="{{ method }}">{{ method|capitalize }}</option>
           {% endfor %}
@@ -29,20 +26,23 @@
         <input
           type="text"
           name="{{ field }}_options"
+          class="options-input"
+          data-field="{{ field }}"
           placeholder="define options"
         />
+        <span class="options-error" data-field="{{ field }}"></span>
       </td>
     </tr>
     {% endfor %}
   </table>
 
-  <div style="margin-top: 30px">
-    <label style="margin-right: 15px">
+  <div class="form-section">
+    <label class="form-label">
       Number of Records:
       <input type="number" name="num_records" min="1" value="1" required />
     </label>
 
-    <label style="margin-right: 15px">
+    <label class="form-label">
       Export Type:
       <select name="export_type">
         <option value="csv">CSV</option>
@@ -52,12 +52,13 @@
       </select>
     </label>
 
-    <label style="margin-right: 15px">
+    <label class="form-label">
       <input type="checkbox" name="separate_files" value="true" />
       Export each record into a separate file?
     </label>
 
-    <button type="submit">Generate Data</button>
+    <button type="submit" class="button-spacing">Generate Data</button>
   </div>
 </form>
+<script src="{{ url_for('static', filename='configure.js') }}"></script>
 {% endblock %}
