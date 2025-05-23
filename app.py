@@ -7,6 +7,7 @@ from handlers.xml_handler import export_xml
 from handlers.excel_handler import export_excel
 from handlers.zip_handler import export_zip
 from handlers.upload_handler import allowed_file, extract_fields
+from handlers.data_generator import get_allowed_data_types, generate_field_value
 
 app = Flask(__name__)
 app.secret_key = "mockdatakey"
@@ -27,7 +28,13 @@ def home():
             if not fields:
                 flash("Could not extract fields from file.")
                 return redirect(url_for("home"))
-            return render_template("configure.html", fields=fields, filename=filename)
+            allowed_data_types = get_allowed_data_types()
+            return render_template(
+                "configure.html",
+                fields=fields,
+                filename=filename,
+                allowed_data_types=allowed_data_types
+            )
         else:
             flash("Invalid file type.")
     return render_template("home.html")
@@ -43,21 +50,12 @@ def generate():
     export_type = request.form.get("export_type", "csv")
     separate_files = request.form.get("separate_files") == "true"
     field_types = {k: v for k, v in request.form.items() if k not in ("filename", "num_records", "export_type", "separate_files")}
-    import random
-    import faker
-    fake = faker.Faker()
+
     data = []
     for _ in range(num_records):
         row = {}
         for field, dtype in field_types.items():
-            if dtype == "Random Number":
-                row[field] = random.randint(1, 1000)
-            elif dtype == "Random Name":
-                row[field] = fake.name()
-            elif dtype == "Boolean":
-                row[field] = random.choice([True, False])
-            else:
-                row[field] = ""
+            row[field] = generate_field_value(dtype)
         data.append(row)
 
     if separate_files:
