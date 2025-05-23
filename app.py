@@ -49,13 +49,25 @@ def generate():
     num_records = int(request.form["num_records"])
     export_type = request.form.get("export_type", "csv")
     separate_files = request.form.get("separate_files") == "true"
-    field_types = {k: v for k, v in request.form.items() if k not in ("filename", "num_records", "export_type", "separate_files")}
-
+    
+    # Separate data types and options
+    field_types = {}
+    field_options = {}
+    for k, v in request.form.items():
+        if k in ("filename", "num_records", "export_type", "separate_files"):
+            continue
+        elif k.endswith("_options"):
+            field = k[:-8]  # Remove '_options' suffix
+            field_options[field] = v
+        else:
+            field_types[k] = v
+    
     data = []
     for _ in range(num_records):
         row = {}
         for field, dtype in field_types.items():
-            row[field] = generate_field_value(dtype)
+            options = field_options.get(field)
+            row[field] = generate_field_value(dtype, options)
         data.append(row)
 
     if separate_files:
