@@ -1,23 +1,36 @@
 {% extends 'base.html' %} {% block content %}
 <h2>Configure Field Data Types</h2>
+<style>
+  table th,
+  table td {
+    padding: 10px 25px;
+    text-align: left;
+  }
+</style>
 <form method="post" action="{{ url_for('generate') }}">
   <input type="hidden" name="filename" value="{{ filename }}" />
   <table>
     <tr>
       <th>Field Name</th>
       <th>Data Type</th>
+      <th>Options</th>
     </tr>
     {% for field in fields %}
     <tr>
       <td>{{ field }}</td>
       <td>
         <select name="{{ field }}">
-          <option value="random number">Random Number</option>
-          <option value="boolean">Boolean</option>
           {% for method in allowed_data_types %}
           <option value="{{ method }}">{{ method|capitalize }}</option>
           {% endfor %}
         </select>
+      </td>
+      <td>
+        <input
+          type="text"
+          name="{{ field }}_options"
+          placeholder="define options"
+        />
       </td>
     </tr>
     {% endfor %}
