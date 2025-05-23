@@ -12,9 +12,11 @@
       <td>{{ field }}</td>
       <td>
         <select name="{{ field }}">
-          <option value="Random Number">Random Number</option>
-          <option value="Random Name">Random Name</option>
-          <option value="Boolean">Boolean</option>
+          <option value="random number">Random Number</option>
+          <option value="boolean">Boolean</option>
+          {% for method in allowed_data_types %}
+          <option value="{{ method }}">{{ method|capitalize }}</option>
+          {% endfor %}
         </select>
       </td>
     </tr>
