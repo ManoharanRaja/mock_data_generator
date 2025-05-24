@@ -20,7 +20,11 @@ def extract_json_fields(data, prefix=""):
     elif isinstance(data, list):
         for idx, item in enumerate(data):
             path = f"{prefix}[{idx}]"
-            fields.extend(extract_json_fields(item, path))
+            if isinstance(item, (dict, list)):
+                fields.extend(extract_json_fields(item, path))
+            else:
+                # This is the missing part: add primitive list items as fields
+                fields.append({"path": path, "value": item})
     return fields
 
 def render_json_with_controls(json_fields, allowed_data_types):
