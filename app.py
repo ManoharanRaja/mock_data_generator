@@ -1,13 +1,15 @@
 import os
+import json
 from flask import Flask, render_template, request, redirect, url_for, send_file, flash
 
-from handlers.json_handler import export_json
-from handlers.csv_handler import export_csv
-from handlers.xml_handler import export_xml
-from handlers.excel_handler import export_excel
-from handlers.zip_handler import export_zip
-from handlers.upload_handler import allowed_file, extract_fields
+from handlers.upload_handler import allowed_file
+from handlers.xml_handler import export_xml, render_xml_with_controls
+from handlers.json_handler import export_json, extract_json_fields, render_json_with_controls
+from handlers.csv_handler import extract_csv_fields, render_csv_with_controls
+from handlers.excel_handler import extract_excel_fields, render_excel_with_controls
 from handlers.data_generator import get_allowed_data_types, generate_field_value
+
+
 
 app = Flask(__name__)
 app.secret_key = "mockdatakey"
@@ -21,20 +23,9 @@ def home():
         file = request.files.get("datafile")
         if file and allowed_file(file.filename):
             filename = file.filename
-            ext = filename.rsplit('.', 1)[1].lower()
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
-            fields = extract_fields(filepath, ext)
-            if not fields:
-                flash("Could not extract fields from file.")
-                return redirect(url_for("home"))
-            allowed_data_types = get_allowed_data_types()
-            return render_template(
-                "configure.html",
-                fields=fields,
-                filename=filename,
-                allowed_data_types=allowed_data_types
-            )
+            return redirect(url_for('preview', filename=filename))
         else:
             flash("Invalid file type.")
     return render_template("home.html")
@@ -43,25 +34,77 @@ def home():
 def about():
     return render_template("about.html")
 
-@app.route("/generate", methods=["POST"])
-def generate():
-    filename = request.form["filename"]
-    num_records = int(request.form["num_records"])
-    export_type = request.form.get("export_type", "csv")
-    separate_files = request.form.get("separate_files") == "true"
-    
-    # Separate data types and options
+@app.route("/preview/<filename>", methods=["GET", "POST"])
+def preview(filename):
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    ext = filename.rsplit('.', 1)[-1].lower()
+
+    if request.method == "GET":
+        if ext == "xml":
+            with open(filepath, "r", encoding="utf-8") as f:
+                raw_xml = f.read()
+            rendered_xml = render_xml_with_controls(filepath, get_allowed_data_types())
+            return render_template(
+                "preview_xml.html",
+                filename=filename,
+                raw_xml=raw_xml,
+                rendered_xml=rendered_xml
+            )
+        elif ext == "json":
+            with open(filepath, "r", encoding="utf-8") as f:
+                raw_json = f.read()
+                json_data = json.loads(raw_json)
+            fields = extract_json_fields(json_data)
+            rendered_json = render_json_with_controls(fields, get_allowed_data_types())
+            return render_template(
+                "preview_json.html",
+                filename=filename,
+                raw_json=raw_json,
+                rendered_json=rendered_json,
+                allowed_data_types=get_allowed_data_types()
+            )
+        elif ext == "csv":
+            # In your /preview/<filename> route, after extracting headers and records:
+            headers, records = extract_csv_fields(filepath)
+            rendered_csv = render_csv_with_controls(headers, records[0], get_allowed_data_types())
+            return render_template(
+                "preview_csv.html",
+                filename=filename,
+                rendered_csv=rendered_csv,
+                rendered_csv_headers=list(headers),
+                rendered_csv_records=records,  # Pass the top 3 records
+                allowed_data_types=get_allowed_data_types()
+            )
+        elif ext == "xlsx":
+            headers, records = extract_excel_fields(filepath)
+            rendered_excel = render_excel_with_controls(headers, records[0], get_allowed_data_types())
+            return render_template(
+                "preview_excel.html",
+                filename=filename,
+                rendered_excel=rendered_excel,
+                rendered_excel_headers=list(headers),
+                rendered_excel_records=records,  # Top 3 records
+                allowed_data_types=get_allowed_data_types()
+            )
+        else:
+            flash("Preview only supported for XML and JSON files at this time.")
+            return redirect(url_for("home"))
+
+    # POST: Generate and return the file
+    num_records = int(request.form.get("num_records", 1))
+    export_type = request.form.get("export_type", ext)
     field_types = {}
     field_options = {}
     for k, v in request.form.items():
-        if k in ("filename", "num_records", "export_type", "separate_files"):
+        if k in ("filename", "num_records", "export_type"):
             continue
         elif k.endswith("_options"):
-            field = k[:-8]  # Remove '_options' suffix
+            field = k[:-8]
             field_options[field] = v
-        else:
-            field_types[k] = v
-    
+        elif k.endswith("_type"):
+            field = k[:-5]
+            field_types[field] = v
+
     data = []
     for _ in range(num_records):
         row = {}
@@ -70,24 +113,15 @@ def generate():
             row[field] = generate_field_value(dtype, options)
         data.append(row)
 
-    if separate_files:
-        # Export each record as a separate file (ZIP)
-        zip_path = export_zip(data, field_types, filename, UPLOAD_FOLDER, export_type)
-        return send_file(zip_path, as_attachment=True)
+    # Export as a single file
+    if export_type == "json":
+        outpath = export_json(data, field_types, filename, UPLOAD_FOLDER)
+    elif export_type == "xml":
+        outpath = export_xml(data, field_types, filename, UPLOAD_FOLDER)
     else:
-        # Export as a single file
-        if export_type == "json":
-            outpath = export_json(data, field_types, filename, UPLOAD_FOLDER)
-        elif export_type == "csv":
-            outpath = export_csv(data, field_types, filename, UPLOAD_FOLDER)
-        elif export_type == "xml":
-            outpath = export_xml(data, field_types, filename, UPLOAD_FOLDER)
-        elif export_type in ["xlsx", "xls", "excel"]:
-            outpath = export_excel(data, field_types, filename, UPLOAD_FOLDER)
-        else:
-            flash("Unsupported export type.")
-            return redirect(url_for("home"))
-        return send_file(outpath, as_attachment=True)
+        flash("Unsupported export type.")
+        return redirect(url_for("home"))
+    return send_file(outpath, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
