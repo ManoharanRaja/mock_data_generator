@@ -1,0 +1,82 @@
+{% extends 'base.html' %} {% block content %}
+<form method="post" action="">
+  <input type="hidden" name="filename" value="{{ filename }}" />
+
+  <button type="button" id="toggle-raw-btn" style="margin-bottom: 15px">
+    Hide Raw JSON
+  </button>
+
+  <div
+    id="json-preview-container"
+    style="display: flex; gap: 30px; width: 100%"
+  >
+    <!-- Left: Raw JSON -->
+    <div id="raw-json-pane" style="flex: 0 0 50%; max-width: 50%">
+      <h3>Raw JSON</h3>
+      <pre
+        style="
+          background: #f8f8f8;
+          padding: 10px;
+          max-height: 600px;
+          overflow: auto;
+          font-family: monospace;
+          white-space: pre-wrap;
+          word-break: break-all;
+        "
+      >
+{{ raw_json }}</pre
+      >
+    </div>
+
+    <!-- Right: JSON Tree with Controls -->
+    <div id="tree-pane" style="flex: 1">
+      <h3>JSON Editor</h3>
+      <div
+        style="
+          background: #f8f8f8;
+          padding: 10px;
+          max-height: 600px;
+          overflow: auto;
+          font-family: monospace;
+        "
+      >
+        {{ rendered_json|safe }}
+      </div>
+    </div>
+  </div>
+  <div
+    class="form-section"
+    style="
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-evenly;
+    "
+  >
+    <label class="form-label">
+      Number of Records:
+      <input type="number" name="num_records" min="1" value="1" required />
+    </label>
+    <label class="form-label">
+      Export Type:
+      <select name="export_type">
+        <option value="csv">CSV</option>
+        <option value="json">JSON</option>
+        <option value="xml">XML</option>
+        <option value="xlsx">XLSX</option>
+      </select>
+    </label>
+    <label class="form-label">
+      <input type="checkbox" name="separate_files" value="true" />
+      Export each record into a separate file?
+    </label>
+    <button type="submit" name="action" value="save" class="button-spacing">
+      Save Configuration
+    </button>
+    <button type="submit" name="action" value="generate" class="button-spacing">
+      Generate Data
+    </button>
+  </div>
+</form>
+<script src="{{ url_for('static', filename='preview_json.js') }}"></script>
+{% endblock %}
