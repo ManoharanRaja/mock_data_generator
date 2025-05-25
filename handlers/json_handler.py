@@ -47,7 +47,8 @@ def render_json_with_controls(json_fields, allowed_data_types):
 
         controls = (
             f'<span style="position:relative; left:{CONTROL_OFFSET - (level * TAG_INDENT)}px; display:inline-flex; align-items:center;">'
-            f'<select name="{path}_type" class="datatype-select" '
+            f'<select name="{path}_type" class="data-type-select" '
+            f'data-field="{path}" '
             f'data-default-value="{value}" '
             f'style="font-size:11px; height:18px; min-width:{select_width}px; width:auto; white-space:nowrap; margin-right:4px;">'
             f'<option value="Default" selected>Default</option>'
