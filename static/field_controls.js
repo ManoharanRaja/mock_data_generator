@@ -1,3 +1,74 @@
+const DATA_TYPE_CONFIG = {
+  "Random Choice": {
+    placeholder: "e.g. Apple,Banana,Cherry",
+    validate: (value) =>
+      value && value.trim() ? null : "Options cannot be empty.",
+  },
+  Age: {
+    placeholder: "e.g. 18-65",
+    validate: (value) =>
+      value && /^\d+\s*-\s*\d+$/.test(value.trim())
+        ? null
+        : "Please enter age range as min-max (e.g. 18-65).",
+  },
+  Date: {
+    placeholder: "e.g. %d/%b/%y",
+    validate: (value) =>
+      value && value.trim()
+        ? null
+        : "Please enter a date format (e.g. %d/%b/%y).",
+  },
+  "Date of Birth": {
+    placeholder: "e.g. %d/%b/%y",
+    validate: (value) =>
+      value && value.trim()
+        ? null
+        : "Please enter a date format (e.g. %d/%b/%y).",
+  },
+  Integer: {
+    placeholder: "e.g. 1-100 or 50",
+    validate: (value) => {
+      if (!value || !value.trim()) return null; // allow default
+      if (/^\d+\s*-\s*\d+$/.test(value.trim()) || /^\d+$/.test(value.trim()))
+        return null;
+      return "Enter a range (min-max) or a single max value (e.g. 1-100 or 50).";
+    },
+  },
+  Float: {
+    placeholder: "e.g. 1.5-10.5 or 100",
+    validate: (value) => {
+      if (!value || !value.trim()) return null; // allow default
+      if (
+        /^\d+(\.\d+)?\s*-\s*\d+(\.\d+)?$/.test(value.trim()) ||
+        /^\d+(\.\d+)?$/.test(value.trim())
+      )
+        return null;
+      return "Enter a range (min-max) or a single max value (e.g. 1.5-10.5 or 100).";
+    },
+  },
+  Decimal: {
+    placeholder: "e.g. 1-10,3 or 4",
+    validate: (value) => {
+      if (!value || !value.trim()) return null; // allow default
+      if (
+        /^\d+(\.\d+)?\s*-\s*\d+(\.\d+)?\s*,\s*\d+$/.test(value.trim()) || // min-max,precision
+        /^\d+$/.test(value.trim()) // just precision
+      )
+        return null;
+      return "Enter range and precision (e.g. 1-10,3) or just precision (e.g. 4).";
+    },
+  },
+  String: {
+    placeholder: "e.g. 10 (length)",
+    validate: (value) => {
+      if (!value || !value.trim()) return null; // allow default
+      if (/^\d+$/.test(value.trim())) return null;
+      return "Enter a string length (e.g. 10).";
+    },
+  },
+  // Add more data types here as needed
+};
+
 document.addEventListener("DOMContentLoaded", function () {
   // Store default values for each options input
   document.querySelectorAll(".data-type-select").forEach(function (select) {
@@ -23,12 +94,10 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!optionsInput) return;
 
       if (this.value === "Default") {
-        // Restore the original default value
         optionsInput.value =
           optionsInput.getAttribute("data-original-default") || "";
         optionsInput.placeholder = "define options";
       } else {
-        // Before switching away from Default, update the stored default value
         if (select.oldValue === "Default") {
           optionsInput.setAttribute(
             "data-original-default",
@@ -36,20 +105,16 @@ document.addEventListener("DOMContentLoaded", function () {
           );
         }
         optionsInput.value = "";
-        if (this.value === "Random Choice") {
-          optionsInput.placeholder = "e.g. Apple,Banana,Cherry";
-        } else {
-          optionsInput.placeholder = "define options";
-        }
+        optionsInput.placeholder =
+          DATA_TYPE_CONFIG[this.value]?.placeholder || "define options";
       }
       optionsInput.style.border = "";
       if (errorSpan) {
         errorSpan.style.display = "none";
         errorSpan.textContent = "";
       }
-      select.oldValue = this.value; // Track previous value
+      select.oldValue = this.value;
     });
-    // Initialize oldValue for each select
     select.oldValue = select.value;
   });
 
@@ -64,14 +129,17 @@ document.addEventListener("DOMContentLoaded", function () {
       var errorSpan = document.querySelector(
         'span.options-error[data-field="' + field + '"]'
       );
-      if (
-        select.value === "Random Choice" &&
-        (!optionsInput.value || !optionsInput.value.trim())
-      ) {
+      let errorMsg = null;
+
+      if (DATA_TYPE_CONFIG[select.value]?.validate) {
+        errorMsg = DATA_TYPE_CONFIG[select.value].validate(optionsInput.value);
+      }
+
+      if (errorMsg) {
         valid = false;
         optionsInput.style.border = "2px solid red";
         if (errorSpan) {
-          errorSpan.textContent = "Options cannot be empty.";
+          errorSpan.textContent = errorMsg;
           errorSpan.style.display = "inline";
           errorSpan.style.color = "red";
         }
