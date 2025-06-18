@@ -1,23 +1,43 @@
-# Flask Template
+# Mock Data Generator
 
-This sample repo contains the recommended structure for a Python Flask project. In this sample, we use `flask` to build a web application and the `pytest` to run tests.
+This web application allows users to upload a data template (CSV, JSON, XML, or Excel), configure field data types, and generate mock data for testing or development purposes. The app is built with Flask and provides an intuitive web interface for data generation and export.
 
- For a more in-depth tutorial, see our [Flask tutorial](https://code.visualstudio.com/docs/python/tutorial-flask).
+## Features
 
- The code in this repo aims to follow Python style guidelines as outlined in [PEP 8](https://peps.python.org/pep-0008/).
+- **Upload Templates:**  
+  Upload a file in CSV, JSON, XML, or Excel format to use as a template for mock data generation.
 
-## Running the Sample
+- **Field Detection:**  
+  Automatically extracts field names from the uploaded file for configuration.
 
-To successfully run this example, we recommend the following VS Code extensions:
+- **Flexible Data Types:**  
+  Assign a data type to each field, including:
 
-- [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
-- [Python Debugger](https://marketplace.visualstudio.com/items?itemName=ms-python.debugpy)
-- [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance) 
+  - Name, Title, Address, Gender, Date of Birth, Nationality, Occupation, Education, Marital Status, Email, Phone Number, Age, Postcode, Country, Random Number, Boolean, Company, Job, Date, City, State, Street Address, Zip Code, and Random Choice (custom options).
 
-- Open the template folder in VS Code (**File** > **Open Folder...**)
-- Create a Python virtual environment using the **Python: Create Environment** command found in the Command Palette (**View > Command Palette**). Ensure you install dependencies found in the `pyproject.toml` file
-- Ensure your newly created environment is selected using the **Python: Select Interpreter** command found in the Command Palette
-- Run the app using the Run and Debug view or by pressing `F5`
-- To test your app, ensure you have the dependencies from `dev-requirements.txt` installed in your environment
-- Navigate to the Test Panel to configure your Python test or by triggering the **Python: Configure Tests** command from the Command Palette
-- Run tests in the Test Panel or by clicking the Play Button next to the individual tests in the `test_app.py` file
+- **Custom Options:**  
+  For "Random Choice" fields, specify your own comma-separated options.
+
+- **Record Count:**  
+  Choose how many mock records to generate.
+
+- **Export Formats:**  
+  Download generated data in your preferred format:
+
+  - CSV
+  - JSON
+  - XML
+  - XLSX (Excel)
+
+- **Separate Files Option:**  
+  Optionally export each record as a separate file, bundled in a ZIP archive.
+
+- **User-Friendly Interface:**  
+  Simple web forms and validation for easy configuration.
+
+- **About Page:**  
+  Learn more about the app from the About section.
+
+---
+
+_See below for setup and usage instructions._
