@@ -126,7 +126,8 @@ def preview(filename):
                 for t_idx, template in enumerate(template_records):
                     row = {}
                     for elem_tag in template.keys():
-                        field_path = f"{root.tag}/{child.tag}[{t_idx}]/{elem_tag}"
+                        # Remove [t_idx] from the path so it matches the form field name
+                        field_path = f"{root.tag}/{child.tag}/{elem_tag}"
                         dtype = field_types.get(field_path, "Default")
                         options = field_options.get(field_path)
                         if dtype == "Default":
@@ -146,7 +147,8 @@ def preview(filename):
                 for t_idx, template in enumerate(template_records):
                     row = {}
                     for elem_tag in template.keys():
-                        field_path = f"{root.tag}/{child.tag}[{t_idx}]/{elem_tag}"
+                        # Remove [t_idx] from the path so it matches the form field name
+                        field_path = f"{root.tag}/{child.tag}/{elem_tag}"
                         dtype = field_types.get(field_path, "Default")
                         options = field_options.get(field_path)
                         if dtype == "Default":
