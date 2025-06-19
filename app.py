@@ -9,8 +9,6 @@ from handlers.csv_handler import extract_csv_fields, render_csv_with_controls
 from handlers.excel_handler import extract_excel_fields, render_excel_with_controls
 from handlers.data_generator import get_allowed_data_types, generate_field_value
 
-
-
 app = Flask(__name__)
 app.secret_key = "mockdatakey"
 
@@ -64,7 +62,6 @@ def preview(filename):
                 allowed_data_types=get_allowed_data_types()
             )
         elif ext == "csv":
-            # In your /preview/<filename> route, after extracting headers and records:
             headers, records = extract_csv_fields(filepath)
             rendered_csv = render_csv_with_controls(headers, records[0], get_allowed_data_types())
             return render_template(
@@ -72,7 +69,7 @@ def preview(filename):
                 filename=filename,
                 rendered_csv=rendered_csv,
                 rendered_csv_headers=list(headers),
-                rendered_csv_records=records,  # Pass the top 3 records
+                rendered_csv_records=records,
                 allowed_data_types=get_allowed_data_types()
             )
         elif ext == "xlsx":
@@ -83,7 +80,7 @@ def preview(filename):
                 filename=filename,
                 rendered_excel=rendered_excel,
                 rendered_excel_headers=list(headers),
-                rendered_excel_records=records,  # Top 3 records
+                rendered_excel_records=records,
                 allowed_data_types=get_allowed_data_types()
             )
         else:
@@ -93,10 +90,11 @@ def preview(filename):
     # POST: Generate and return the file
     num_records = int(request.form.get("num_records", 1))
     export_type = request.form.get("export_type", ext)
+    separate_files = request.form.get("separate_files") == "true"
     field_types = {}
     field_options = {}
     for k, v in request.form.items():
-        if k in ("filename", "num_records", "export_type"):
+        if k in ("filename", "num_records", "export_type", "separate_files"):
             continue
         elif k.endswith("_options"):
             field = k[:-8]
@@ -106,22 +104,104 @@ def preview(filename):
             field_types[field] = v
 
     data = []
-    for _ in range(num_records):
-        row = {}
-        for field, dtype in field_types.items():
-            options = field_options.get(field)
-            row[field] = generate_field_value(dtype, options)
-        data.append(row)
+    template_count = 1
 
-    # Export as a single file
-    if export_type == "json":
-        outpath = export_json(data, field_types, filename, UPLOAD_FOLDER)
-    elif export_type == "xml":
-        outpath = export_xml(data, field_types, filename, UPLOAD_FOLDER)
+    if ext == "xml":
+        import xml.etree.ElementTree as ET
+        tree = ET.parse(filepath)
+        root = tree.getroot()
+        template_records = []
+        for child in root:
+            record = {}
+            for elem in child:
+                record[elem.tag] = elem.text
+            template_records.append(record)
+        template_count = len(template_records)
+
+        # For separate files, group each file as a set of persons
+        if separate_files:
+            grouped_data = []
+            for i in range(num_records):
+                group = []
+                for t_idx, template in enumerate(template_records):
+                    row = {}
+                    for elem_tag in template.keys():
+                        field_path = f"{root.tag}/{child.tag}[{t_idx}]/{elem_tag}"
+                        dtype = field_types.get(field_path, "Default")
+                        options = field_options.get(field_path)
+                        if dtype == "Default":
+                            row[elem_tag] = template.get(elem_tag, "")
+                        else:
+                            row[elem_tag] = generate_field_value(dtype, options)
+                    group.append(row)
+                grouped_data.append(group)
+            from handlers.zip_handler import export_zip
+            zip_path = export_zip(
+                grouped_data, field_types, filename, UPLOAD_FOLDER, export_type, group_records=True
+            )
+            return send_file(zip_path, as_attachment=True)
+        else:
+            data = []
+            for i in range(num_records):
+                for t_idx, template in enumerate(template_records):
+                    row = {}
+                    for elem_tag in template.keys():
+                        field_path = f"{root.tag}/{child.tag}[{t_idx}]/{elem_tag}"
+                        dtype = field_types.get(field_path, "Default")
+                        options = field_options.get(field_path)
+                        if dtype == "Default":
+                            row[elem_tag] = template.get(elem_tag, "")
+                        else:
+                            row[elem_tag] = generate_field_value(dtype, options)
+                    data.append(row)
+            outpath = export_xml(data, field_types, filename, UPLOAD_FOLDER)
+            return send_file(outpath, as_attachment=True)
+
+    elif ext == "json":
+        with open(filepath, "r", encoding="utf-8") as f:
+            json_data = json.load(f)
+        template_records = json_data if isinstance(json_data, list) else [json_data]
+        template_count = len(template_records)
+
+        if separate_files:
+            grouped_data = []
+            for i in range(num_records):
+                group = []
+                for t_idx, template in enumerate(template_records):
+                    row = {}
+                    for field in template.keys():
+                        dtype = field_types.get(field, "Default")
+                        options = field_options.get(field)
+                        if dtype == "Default":
+                            row[field] = template.get(field, "")
+                        else:
+                            row[field] = generate_field_value(dtype, options)
+                    group.append(row)
+                grouped_data.append(group)
+            from handlers.zip_handler import export_zip
+            zip_path = export_zip(
+                grouped_data, field_types, filename, UPLOAD_FOLDER, export_type, group_records=True
+            )
+            return send_file(zip_path, as_attachment=True)
+        else:
+            data = []
+            for i in range(num_records):
+                for t_idx, template in enumerate(template_records):
+                    row = {}
+                    for field in template.keys():
+                        dtype = field_types.get(field, "Default")
+                        options = field_options.get(field)
+                        if dtype == "Default":
+                            row[field] = template.get(field, "")
+                        else:
+                            row[field] = generate_field_value(dtype, options)
+                    data.append(row)
+            outpath = export_json(data, field_types, filename, UPLOAD_FOLDER)
+            return send_file(outpath, as_attachment=True)
+
     else:
         flash("Unsupported export type.")
         return redirect(url_for("home"))
-    return send_file(outpath, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -25,7 +25,8 @@ def export_xml(data, field_types, filename, upload_folder):
     for record in data:
         rec_elem = ET.SubElement(root, child_tag)
         for k, v in record.items():
-            elem = ET.SubElement(rec_elem, k)
+            tag_name = k.split("/")[-1]  # Only use the last part of the path
+            elem = ET.SubElement(rec_elem, tag_name)
             elem.text = str(v)
     xml_str = prettify_xml(root)
     outpath = os.path.join(upload_folder, "mock_data.xml")
@@ -147,10 +148,16 @@ def extract_xml_structure(filepath):
     child_tag = first_child.tag if first_child is not None else "Record"
     return root_tag, root_attrib, child_tag
 
-def build_xml_tree(root_tag, root_attrib, child_tag, record):
+def build_xml_tree(root_tag, root_attrib, child_tag, records):
+    import xml.etree.ElementTree as ET
     root = ET.Element(root_tag, root_attrib)
-    rec_elem = ET.SubElement(root, child_tag)
-    for k, v in record.items():
-        elem = ET.SubElement(rec_elem, k)
-        elem.text = str(v)
+    # Ensure records is always a list
+    if isinstance(records, dict):
+        records = [records]
+    for record in records:
+        rec_elem = ET.SubElement(root, child_tag)
+        for k, v in record.items():
+            tag_name = k.split("/")[-1]
+            elem = ET.SubElement(rec_elem, tag_name)
+            elem.text = str(v)
     return root
